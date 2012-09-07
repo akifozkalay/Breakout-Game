@@ -60,8 +60,8 @@ public class Breakout extends GraphicsProgram  {
 	private static final int NTURNS = 3;
 	
 /** Animation delay or pause time between ball moves */ 
-	private static final int DELAY = 20; 
-
+	private static final int DELAY = 10; 
+	
 	/* Method: run() */
 /** Runs the Breakout program. */
 	public void run() {
@@ -69,66 +69,74 @@ public class Breakout extends GraphicsProgram  {
 		setSize(APPLICATION_WIDTH, APPLICATION_HEIGHT);
 		setupBricks();
 		paddle();
-		ballSetup();
-		while (gameOver() ) {
-		 
-			
-		 
-		moveBall();
-		//getCollidingObject();
-		//bottomWall = true;
 		
-		checkForPaddleCollision();
-		//checkForPaddleCollision();
-		//checkForBricksCollision();
-		pause(DELAY); 
-	//if	(ball.getY() >= getHeight() -BALL_RADIUS ) break;
-	
-		}
-	}
-
+		//For loop for player turns
+		for(int i=0; i<NTURNS; i++){
+			ballSetup();
+			displayMessage();
+		
+			while (true ) {
+				moveBall();
+		//determines if game is over -- true if either if ball has moved to bottom of screen
+		//or all Bricks are removed 
+				if(ball.getY()>getHeight()) break;
+				if(brickCount==totalBricks){
+					win();
+					break; 	 
+				}
+				checkForCollision();
+				pause(DELAY); 
+		
+			}
+				if(brickCount==totalBricks){
+					win();
+					break;
+				} 
+	}gameover();
+ }
 
 	
 		
 
-
+    //setup brick 10X10 and fill color depending on the row
 	private void setupBricks(){
 		
-		int temp = 12;
-		for (int i=0;i<NBRICK_ROWS;i++){
+		/*need to have several columns in each row
+		 * so there need to be two for loops, 
+		 * one for loop for the rows and one for loop for the columns.
+		 */ 
+		for(int row=0; row<NBRICK_ROWS; row++){
+			for(int col=0; col<NBRICKS_PER_ROW; col++){
+				rect = new	GRect(BRICK_WIDTH,BRICK_HEIGHT );
+				add(rect,((col* (BRICK_WIDTH+BRICK_SEP ))), (BRICK_Y_OFFSET)+row*(BRICK_HEIGHT+BRICK_SEP ));	
 			
-			for (int j=0; j<NBRICKS_PER_ROW ; j++){
-			
-				rect = new GRect(BRICK_WIDTH,BRICK_HEIGHT);
-				add(rect,((j*(BRICK_WIDTH+BRICK_SEP))),(BRICK_Y_OFFSET+temp));		
-				
-				if (i==0||i==1){
+				if(row<2){
 					rect.setFillColor(Color.RED);
 					rect.setFilled(true);
-				}else if (i==2||i==3){
+				}
+				else if(row==2||row==3){
 					rect.setFillColor(Color.ORANGE);
 					rect.setFilled(true);
-				}else if (i==4||i==5){
+				}
+				else if(row==4||row==5){
 					rect.setFillColor(Color.YELLOW);
 					rect.setFilled(true);
-				}else if (i==6||i==7){
+				}
+				else if(row==6||row==7){
 					rect.setFillColor(Color.GREEN);
 					rect.setFilled(true);
-				}else if (i==8||i==9){
+				}
+				else if (row==8||row==9){
 					rect.setFillColor(Color.CYAN);
 					rect.setFilled(true);
 				}
-				
 			}
-			temp= temp+12;
 			
 		}
 		
-		
-			
 	}
 		
-	
+	//Create and place Paddle and add mouse listeners.
 	private void paddle(){
 		 paddle = new GRect(PADDLE_WIDTH,PADDLE_HEIGHT);
 		add(paddle,(getWidth()/2),(getHeight()-PADDLE_Y_OFFSET));	
@@ -142,55 +150,58 @@ public class Breakout extends GraphicsProgram  {
 		paddle.setLocation(e.getX(), (getHeight()-PADDLE_Y_OFFSET));
 	}
 	
+	//Create and place ball.
 	private void ballSetup(){
 		
-		 ball = new GOval(APPLICATION_HEIGHT/2,APPLICATION_WIDTH/2,2*BALL_RADIUS,2*BALL_RADIUS);
-		
+		ball = new GOval(APPLICATION_HEIGHT/2,APPLICATION_WIDTH/2,2*BALL_RADIUS,2*BALL_RADIUS);
 		add(ball);
 		ball.setFilled(true);
-
-		 ball.move(vx,vy); 
-		 vy+=GRAVITY;
+		
+	
 		vx = rgen.nextDouble(1.0, 3.0); 
 		if (rgen.nextBoolean(0.5)) vx = -vx;
+	
+		vy=0.0;
+		vy+=GRAVITY;
 		
+		  
 		
 		 
 }
 		
-		 
-		
+		 //Update and move ball
+		//Determine if collision with floor, update velocities 
+	  //and location as appropriate. 
 	private void moveBall(){
 		
+		ball.move(vx,vy);
+		if(ball.getY()<BALL_RADIUS){
+			vy=-vy;
+			 
+		}
+		//check if ball hit the sides of the wall
+		if(ball.getX()<BALL_RADIUS ||ball.getX()>getWidth()-BALL_RADIUS*2){
+			vx=-vx;
+			 
+		}
 		
-		
-		 gameover = 0;
-	 
-	  if (ball.getY()<BALL_RADIUS||ball.getY() > ( getHeight() - BALL_RADIUS))   {
-		   // change ball's Y velocity to now bounce upwards 
-		 gameover++;
-		 ballSetup();
-	  }
-		  //vy = -vy;
-		  if (ball.getX()<BALL_RADIUS || ball.getX() > getWidth() - BALL_RADIUS)  
-		  vx = -vx;
-		  
-		  ball.move(vx,vy);
 		 
-	  }
-	 
-
-	private void checkForPaddleCollision() {
+	}
+           //Determine if collision with paddle or bricks
+	private void checkForCollision() {
 		
 		
 		collider = getCollidingObject();
 		if ( collider != null ){
 			if ( collider == paddle ) {
+				bounceClip.play();
 				vy = -vy;
 				
 			}
 			else{
+				bounceClip.play();
 				remove(collider);
+				brickCount++;
 				vy = -vy;
 			}
 		}
@@ -198,99 +209,68 @@ public class Breakout extends GraphicsProgram  {
 	}
 		
 
-	private boolean gameOver() {
-		if    (gameover==NTURNS)   {
-		 return false;
-		}
-		return true;
-	}
-	
+	 
 		
-		
-		
-		
-		
-		/*if (ball != null) {
-			  collObj = getElementAt(ball.getX(), ball.getY());
-			 //collObj = getCollidingObject();
-				
-			  collObj = getElementAt(ball.getX()+(2*BALL_RADIUS) , ball.getY());    				 
-			  collObj = getElementAt(ball.getX(), ball.getY()+(2*BALL_RADIUS));
-					 
-			  collObj = getElementAt(ball.getX()+(2*BALL_RADIUS), ball.getY()+(2*BALL_RADIUS));
-				
-			 
-		
-			 } 
-		if ( collObj == paddle) 
-				 
-		{ vy = -vy;
-		
-		}
-		
-	}
-	*/
+		//get object at collision 
 
-
-
-/*private void checkForBricksCollision() {
-	// TODO Auto-generated method stub
-	if(ball.getY()<(getHeight()-150))
-	{
-		if (ball != null) {
-			  collObj2 = getElementAt(ball.getX(), ball.getY());
-			 //collObj = getCollidingObject();
-				
-			  collObj2 = getElementAt(ball.getX()+(2*BALL_RADIUS) , ball.getY());    				 
-			  collObj2 = getElementAt(ball.getX(), ball.getY()+(2*BALL_RADIUS));
-					 
-			  collObj2 = getElementAt(ball.getX()+(2*BALL_RADIUS), ball.getY()+(2*BALL_RADIUS));
-				
-			 
-		
-			 } 
-	}
-		if ( collObj2 !=null){
-			remove(collObj2);
-			vy = -vy;
-		}
-
-	}*/
 	private GObject getCollidingObject() {
-		GObject gobj;
+		 
 		double x = ball.getX();
 		double y = ball.getY();
-		gobj =  getElementAt(x, y);
-		if (gobj == null )      
-			gobj =  getElementAt(x+2*BALL_RADIUS, y  );
-		if (gobj == null )      
-			gobj =  getElementAt(x,y+2*BALL_RADIUS);
-		if (gobj == null )      
-			gobj =  getElementAt(x+2*BALL_RADIUS,y+2*BALL_RADIUS);
-	
-		return gobj;
+		   
+		if ( getElementAt(x, y)!= null ) {
+			return getElementAt(x, y);
+		}
+		else if(getElementAt(x+2*BALL_RADIUS, y)!=null){
+			return getElementAt(x+2*BALL_RADIUS, y  );
+		}
+		else if(getElementAt(x,y+2*BALL_RADIUS)!=null){
+			return getElementAt(x,y+2*BALL_RADIUS);
+		}		
+		else if(getElementAt(x+2*BALL_RADIUS,y+2*BALL_RADIUS)!=null){
+			return getElementAt(x+2*BALL_RADIUS,y+2*BALL_RADIUS);
+		}	
+
+		return null;
  }
-	/*private void checkForWallCollision() { 
-		 if (ball.getY() > getHeight() - BALL_RADIUS);  
-		   vy=-vy;
-		   ball.move(vx,vy);
+	//display start message
+	private void displayMessage(){
+		GLabel mess = new GLabel("Click Mouse Button", 50,getHeight()/2);
+		mess.setFont(new Font("Serif", Font.BOLD, 18));
+		mess.setColor(Color.blue);
+		add(mess);
+		waitForClick();
+		remove(mess);
 	}
-	*/
+			
+	//Display if user win.
+	private void win(){
+		GLabel win = new GLabel("Wow You Win", getWidth()/3,getHeight()/2);
+		win.setFont(new Font("Serif", Font.BOLD, 18));
+		win.setColor(Color.blue);
+		add(win);
 		
-	
-	
-	/* Private instance variables */
-	
-	//private int i;
-	private int gameover;
+	}
+	 
+	private void gameover(){
+		GLabel lose = new GLabel("Game Over", getWidth()/3,getHeight()/2);
+		lose.setFont(new Font("Serif", Font.BOLD, 18));
+		lose.setColor(Color.blue);
+		add(lose);
+		
+	}	
+	AudioClip bounceClip = MediaTools.loadAudioClip("sfx.au");
+	private int brickCount;
+	private int totalBricks=100;
+	 
 	private GRect paddle;
 	private GObject collider ;
-	private GObject collObj2;
+	
 	private GRect rect;
 	private GOval ball;
 	private RandomGenerator rgen = RandomGenerator.getInstance();
 	private double vx;
-	private double vy=3.0;
+	private double vy;
 	
 	
 	
